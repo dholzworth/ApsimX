@@ -415,7 +415,7 @@ namespace UserInterface.Presenters
                                               typeof(Simulations),
                                               typeof(Experiment),
                                               typeof(Folder)
-                                            }            
+                                            }
                     )
         ]
         /// <summary>
@@ -436,9 +436,43 @@ namespace UserInterface.Presenters
             {
                 explorerPresenter.MainPresenter.ShowMessage("Microsoft Azure functionality is currently only available under Windows.", Simulation.ErrorLevel.Error);
             }
-            
+
         }
-        
+
+        [ContextMenu(MenuName = "Generate .apsimx files",
+                     AppliesTo = new Type[] { typeof(Simulations),
+                                              typeof(Simulation),
+                                              typeof(Experiment),
+                                              typeof(Folder)
+                                            }
+                     )
+        ]
+        public void GenerateModelFiles(object sender, EventArgs e)
+        {
+            IModel model = Apsim.Get(explorerPresenter.ApsimXFile, explorerPresenter.CurrentNodePath) as IModel;
+            List<IModel> children = Apsim.ChildrenRecursively(model, typeof(Experiment));
+            string path = Path.Combine(Path.GetDirectoryName(explorerPresenter.ApsimXFile.FileName), "OutputFiles");
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            foreach (IModel child in children)
+            {
+                string xml = Apsim.Serialise(child);
+                string file = Path.Combine(path, child.Name + ".apsimx");
+                try
+                {
+                    using (FileStream fs = File.Create(path))
+                    {
+                        Byte[] info = new System.Text.UTF8Encoding(true).GetBytes(xml);
+                        fs.Write(info, 0, info.Length);
+                    }
+                } catch (Exception ex)
+                {
+                    explorerPresenter.MainPresenter.ShowMessage(ex.ToString(), Simulation.ErrorLevel.Error);
+                }
+                
+            }
+        }
+            
+
         /// <summary>
         /// Event handler for a Add model action
         /// </summary>
